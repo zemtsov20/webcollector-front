@@ -9,8 +9,8 @@
         class="full-width row justify-center"
       >
         <q-input
-          placeholder="Введите название категории или товара"
-          label="Категория или товар"
+          placeholder="Введите ссылку на категорию или товар"
+          label="Ссылка на категорию или товар"
           outlined
           v-model="url"
           class="col-6"
@@ -65,7 +65,7 @@
 
 <script>
 import ChartAndTable from 'components/ChartAndTable'
-
+import { eventbus } from 'boot/eventbus'
 export default {
   components: {
     ChartAndTable
@@ -241,7 +241,13 @@ export default {
       await new Promise((resolve, reject) => setTimeout(resolve, 1000))
       this.resultsExists = true
       this.loadingState = false
+    },
+    onclick (link) {
+      this.url = link
     }
+  },
+  created () {
+    eventbus.$on('clicked', onclick)
   }
 }
 </script>
