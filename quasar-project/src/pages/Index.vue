@@ -38,25 +38,46 @@
             dense
             align="justify"
           >
-            <q-tab name="basic" icon="dashboard" label="Простая"/>
-            <q-tab name="subcategory" icon="article" label="Подкатегории"/>
-            <q-tab name="sellers" icon="person" label="Продавцы"/>
+            <q-tab
+              name="basic"
+              icon="dashboard"
+              label="Простая"
+            />
+            <q-tab
+              name="subcategory"
+              icon="article"
+              label="Подкатегории"
+            />
+            <q-tab
+              name="sellers"
+              icon="person"
+              label="Продавцы"
+            />
           </q-tabs>
         </div>
         <div
           v-show="tab==='basic'"
         >
-          <chart-and-table :chart="basicChart" :table="basicTable"/>
+          <chart-and-table
+            :chart="basicChart"
+            :table="basicTable"
+          />
         </div>
         <div
           v-show="tab==='subcategory'"
         >
-          <chart-and-table :chart="subcategoryChart" :table="subcategoryTable"/>
+          <chart-and-table
+            :chart="subcategoryChart"
+            :table="subcategoryTable"
+          />
         </div>
         <div
           v-show="tab==='sellers'"
         >
-          <chart-and-table :chart="sellersChart" :table="sellersTable"/>
+          <chart-and-table
+            :chart="sellersChart"
+            :table="sellersTable"
+          />
         </div>
       </div>
     </div>
@@ -65,7 +86,6 @@
 
 <script>
 import ChartAndTable from 'components/ChartAndTable'
-import { eventbus } from 'boot/eventbus'
 export default {
   components: {
     ChartAndTable
@@ -246,8 +266,15 @@ export default {
       this.url = link
     }
   },
-  created () {
-    eventbus.$on('clicked', onclick)
+  computed: {
+    currentLinkField () {
+      return this.$store.getters['mySiteStore/currentLinkGetter']
+    }
+  },
+  watch: {
+    currentLinkField: function () {
+      this.url = this.$store.state.mySiteStore.currentLink
+    }
   }
 }
 </script>
