@@ -56,15 +56,22 @@
           </q-tabs>
         </div>
         <div
-          v-show="tab==='basic'"
+          v-show="tab === 'basic'"
+          class="column q-gutter-y-sm"
         >
+          <q-banner
+            v-if="basicBannerFlag"
+            class="bg-primary text-white"
+          >
+            Информация по некоторым датам в промежутке недоступна! Вы картон!
+          </q-banner>
           <chart-and-table
             :chart="basicChart"
             :table="basicTable"
           />
         </div>
         <div
-          v-show="tab==='subcategory'"
+          v-show="tab === 'subcategory'"
         >
           <chart-and-table
             :chart="subcategoryChart"
@@ -72,7 +79,7 @@
           />
         </div>
         <div
-          v-show="tab==='sellers'"
+          v-show="tab === 'sellers'"
         >
           <chart-and-table
             :chart="sellersChart"
@@ -95,12 +102,13 @@ export default {
     return {
       loadingState: false,
       resultsExists: false,
+      basicBannerFlag: false,
       // basic chart info
       basicChart: {
         series: [
           {
             name: 'Цена',
-            data: []
+            data: null
           }
         ],
         chart: {
@@ -118,10 +126,21 @@ export default {
             field: 'period',
             sortable: true
           },
-          { name: 'sales', align: 'center', label: 'Средняя стоимость', field: 'averagePrice', sortable: true },
-          { name: 'products', label: 'Среднее кол-во', field: 'goodsCount', sortable: true }
+          {
+            name: 'sales',
+            align: 'center',
+            label: 'Средняя стоимость',
+            field: 'averagePrice',
+            sortable: true
+          },
+          {
+            name: 'products',
+            label: 'Среднее кол-во',
+            field: 'goodsCount',
+            sortable: true
+          }
         ],
-        data: []
+        data: null
       },
       // subcategory chart info
       subcategoryChart: {
@@ -167,8 +186,19 @@ export default {
             field: 'period',
             sortable: true
           },
-          { name: 'sales', align: 'center', label: 'Продажи', field: 'sales', sortable: true },
-          { name: 'products', label: 'Товары', field: 'products', sortable: true }
+          {
+            name: 'sales',
+            align: 'center',
+            label: 'Продажи',
+            field: 'sales',
+            sortable: true
+          },
+          {
+            name: 'products',
+            label: 'Товары',
+            field: 'products',
+            sortable: true
+          }
         ],
         data: [
           {
@@ -207,26 +237,21 @@ export default {
             field: 'period',
             sortable: true
           },
-          { name: 'sales', align: 'center', label: 'Продажи', field: 'sales', sortable: true },
-          { name: 'products', label: 'Товары', field: 'products', sortable: true }
-        ],
-        data: [
           {
-            period: '20-03-22',
-            sales: 2222222,
-            products: 3144
+            name: 'sales',
+            align: 'center',
+            label: 'Продажи',
+            field: 'sales',
+            sortable: true
           },
           {
-            period: '28-03-22',
-            sales: 225322,
-            products: 3144
-          },
-          {
-            period: '25-03-22',
-            sales: 23222,
-            products: 3144
+            name: 'products',
+            label: 'Товары',
+            field: 'products',
+            sortable: true
           }
-        ]
+        ],
+        data: null
       },
       url: '',
       tab: 'basic'
@@ -235,9 +260,15 @@ export default {
   methods: {
     async getUrl () {
       this.loadingState = true
-      // const response = await fetch('http://127.0.0.1:8080/basic?name=testName&period=20-05-22')
-      // const responseData = await response.json()
-      // await new Promise((resolve, reject) => setTimeout(resolve, 1000))
+      const basicDataArray = []
+      const response = await fetch('http://127.0.0.1:8080/basic?name=testName&period=20-05-22')
+      let responseData = await response.json()
+      const initialResponseDataLength = responseData.length
+      responseData = responseData.filter(el => el.averagePrice !== null)
+      this.basicBannerFlag = initialResponseDataLength === responseData.length
+      responseData.forEach(el => basicDataArray.push(el.averagePrice))
+      this.basicChart.series.data = basicDataArray
+      this.basicTable.data = responseData
       this.resultsExists = true
       this.loadingState = false
     },
