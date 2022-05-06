@@ -87,7 +87,11 @@
                 color="primary"
                 icon="bi-forward-fill"
                 @click.stop="onClick(prop.node.url)"
-              />
+              >
+                <q-tooltip>
+                  Скопировать ссылку в строку поиска
+                </q-tooltip>
+              </q-btn>
             </div>
           </template>
         </q-tree>

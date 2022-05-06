@@ -99,8 +99,8 @@ export default {
       basicChart: {
         series: [
           {
-            name: 'test',
-            data: [1, 2, 13, 4, 5, 7, 11, 32]
+            name: 'Цена',
+            data: []
           }
         ],
         chart: {
@@ -118,26 +118,10 @@ export default {
             field: 'period',
             sortable: true
           },
-          { name: 'sales', align: 'center', label: 'Продажи', field: 'sales', sortable: true },
-          { name: 'products', label: 'Товары', field: 'products', sortable: true }
+          { name: 'sales', align: 'center', label: 'Средняя стоимость', field: 'averagePrice', sortable: true },
+          { name: 'products', label: 'Среднее кол-во', field: 'goodsCount', sortable: true }
         ],
-        data: [
-          {
-            period: '20-03-22',
-            sales: 2222222,
-            products: 3144
-          },
-          {
-            period: '28-03-22',
-            sales: 225322,
-            products: 3144
-          },
-          {
-            period: '25-03-22',
-            sales: 23222,
-            products: 3144
-          }
-        ]
+        data: []
       },
       // subcategory chart info
       subcategoryChart: {
@@ -250,15 +234,10 @@ export default {
   },
   methods: {
     async getUrl () {
-      // fetch('http://127.0.0.1:8080/basic?name=testName&period=20-05-22')
-      //   .then((response) => {
-      //     return response.json()
-      //   })
-      //   .catch((data) => {
-      //     console.log(data)
-      //   })
       this.loadingState = true
-      await new Promise((resolve, reject) => setTimeout(resolve, 1000))
+      // const response = await fetch('http://127.0.0.1:8080/basic?name=testName&period=20-05-22')
+      // const responseData = await response.json()
+      // await new Promise((resolve, reject) => setTimeout(resolve, 1000))
       this.resultsExists = true
       this.loadingState = false
     },
