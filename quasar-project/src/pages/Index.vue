@@ -174,6 +174,24 @@
         <div
           v-show="tab === 'subcategory'"
         >
+          <div
+            class="row justify-center"
+          >
+            <q-banner
+              v-if="basicBannerFlag"
+              class="bg-primary text-white q-mt-md col-9"
+            >
+              <template
+                v-slot:avatar
+              >
+                <q-icon
+                  name="bi-exclamation-circle"
+                  color="white"
+                />
+              </template>
+              Информация по некоторым датам в промежутке недоступна! Вы батон!
+            </q-banner>
+          </div>
           <chart-and-table
             :chart="subcategoryChart"
             :table="subcategoryTable"
@@ -206,7 +224,7 @@ export default {
       resultsExists: false,
       basicBannerFlag: false,
       /**
-       * @typedef {Object} basicChartDataConfiguration
+       * @typedef {Object} chartDataConfiguration
        * @property {string} name
        * @property {number[]} data
        */
@@ -216,7 +234,7 @@ export default {
        */
       /**
        * @typedef {Object} basicChartConfiguration
-       * @property {basicChartDataConfiguration[]} series
+       * @property {chartDataConfiguration[]} series
        * @property {basicChartTypeConfiguration} chart
        */
       /**
@@ -283,14 +301,27 @@ export default {
         data: null
       },
       // subcategory chart info
+      /**
+       * @typedef {Object} subcategoryChartXAxisConfiguration
+       * @property {string[]} categories
+       */
+      /**
+       * @typedef {Object} subcategoryChartConfiguration
+       * @property {string} type
+       * @property {Object} dataLabels
+       * @property {Object} stroke
+       * @property {subcategoryChartXAxisConfiguration} xaxis
+       */
+      /**
+       * @typedef {Object} subcategoryChart
+       * @property {chartDataConfiguration[]} series
+       * @property {subcategoryChartConfiguration} chart
+       */
+      /**
+       * @type {subcategoryChart}
+       */
       subcategoryChart: {
-        series: [{
-          name: 'series1',
-          data: [31, 40, 28, 51, 42, 109, 100]
-        }, {
-          name: 'series2',
-          data: [11, 32, 45, 32, 34, 52, 41]
-        }],
+        series: null,
         chart: {
           type: 'area',
           dataLabels: {
@@ -300,63 +331,49 @@ export default {
             curve: 'smooth'
           },
           xaxis: {
-            categories: ['2018-09-19',
-              '2018-09-20',
-              '2018-09-21',
-              '2018-09-22',
-              '2018-09-23',
-              '2018-09-24',
-              '2018-09-25']
+            categories: null
           }
-          // tooltip: {
-          //   x: {
-          //     format: 'dd/MM/yy HH:mm'
-          //   }
-          // }
         }
       },
-      // subcategory table info
+      /**
+       * @typedef {Object} subcategoryInformation
+       * @property {string} subcategory
+       * @property {string} averagePrice
+       * @property {string} averageProductCount
+       */
+      /**
+       * @typedef {Object} subcategoryTableConfiguration
+       * @property {columnConfiguration[]} columns
+       * @property {subcategoryInformation[]} data
+       */
+      /**
+       * @type {subcategoryTableConfiguration}
+       */
       subcategoryTable: {
         columns: [
           {
-            name: 'period',
+            name: 'subcategory',
             required: true,
-            label: 'Период',
+            label: 'Подкатегория',
             align: 'left',
-            field: 'period',
+            field: 'subcategory',
             sortable: true
           },
           {
-            name: 'sales',
+            name: 'averagePrice',
             align: 'center',
-            label: 'Продажи',
-            field: 'sales',
+            label: 'Средняя цена',
+            field: 'averagePrice',
             sortable: true
           },
           {
-            name: 'products',
-            label: 'Товары',
-            field: 'products',
+            name: 'averageProductCount',
+            label: 'Среднее количество товаров',
+            field: 'averageProductCount',
             sortable: true
           }
         ],
-        data: [
-          {
-            period: '20-03-22',
-            sales: 2222222,
-            products: 3144
-          },
-          {
-            period: '28-03-22',
-            sales: 225322,
-            products: 3144
-          },
-          {
-            period: '25-03-22',
-            sales: 23222,
-            products: 3144
-          }
-        ]
+        data: null
       },
       // sellers chart info
       sellersChart: {
@@ -400,6 +417,48 @@ export default {
     }
   },
   methods: {
+    dateConverter (initDate, format) {
+      const dateBuffer = date.extractDate(initDate, format)
+      let day = dateBuffer.getDate()
+      let month = dateBuffer.getMonth() + 1
+      day = (day < 10 ? '0' : '') + day.toString()
+      month = (month < 10 ? '0' : '') + month.toString()
+      return day + '.' + month + '.' + dateBuffer.getFullYear().toString()
+    },
+    async initSubcategoryData () {
+      const response = await fetch(`http://127.0.0.1:8080/subcategory-statistics?ref=${this.url}&start=${this.start}&end=${this.end}`)
+      const responseData = await response.json()
+      const arrayForTable = []
+      const dateArray = []
+      const figureData = []
+      for (let i = 0; i < responseData.length; i++) {
+        responseData[i] = responseData[i].filter(el => !!el.averagePrice)
+      }
+      responseData[0].forEach((el, i, a) => {
+        dateArray[i] = this.dateConverter(el.period, 'DD MM YYYY HH:mm:ss ZZ')
+      })
+      for (let i = 0; i < responseData.length; i++) {
+        arrayForTable.push({
+          subcategory: responseData[i].categoryUrl,
+          averagePrice: 0,
+          averageProductCount: 0
+        })
+        figureData.push({
+          name: responseData[i].categoryUrl,
+          data: []
+        })
+        for (let j = 0; j < responseData[i].length; j++) {
+          arrayForTable[i].averagePrice += responseData[j].averagePrice
+          arrayForTable[i].averageProductCount += responseData[j].goodsCount
+          figureData[i].data.push(responseData[j].averagePrice)
+        }
+        arrayForTable[i].averagePrice = (arrayForTable[i].averagePrice / responseData[i].length).toString()
+        arrayForTable[i].averageProductCount = (arrayForTable[i].averageProductCount / responseData[i].length).toString()
+        this.subcategoryTable.data = arrayForTable
+        this.subcategoryChart.series = figureData
+        this.subcategoryChart.chart.xaxis = dateArray
+      }
+    },
     async initBasicData () {
       const basicDataArray = []
       const response = await fetch(`http://127.0.0.1:8080/basic-statistics?ref=${this.url}&start=${this.start}&end=${this.end}`)
@@ -408,12 +467,7 @@ export default {
       responseData = responseData.filter(el => el.averagePrice !== 'null')
       this.basicBannerFlag = initialResponseDataLength !== responseData.length
       responseData.forEach(el => {
-        el.period = date.extractDate(el.period, 'DD MM YYYY HH:mm:ss ZZ')
-        let day = el.period.getDate()
-        let month = el.period.getMonth() + 1
-        day = (day < 10 ? '0' : '') + day.toString()
-        month = (month < 10 ? '0' : '') + month.toString()
-        el.period = day + '.' + month + '.' + el.period.getFullYear().toString()
+        el.period = this.dateConverter(el.period, 'DD MM YYYY HH:mm:ss ZZ')
         basicDataArray.push({ x: el.period, y: el.averagePrice })
       })
       this.basicChart.series[0].data = basicDataArray
@@ -426,6 +480,7 @@ export default {
       if (correctURLFieldInput && correctEndDateInput && correctStartDateInput) {
         this.loadingState = true
         await this.initBasicData()
+        await this.initSubcategoryData()
         this.resultsExists = true
         this.loadingState = false
       }
