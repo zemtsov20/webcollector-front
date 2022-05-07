@@ -28,7 +28,7 @@
         />
       </div>
       <div
-        v-if="tab !== 'brands'"
+        v-show="tab !== 'brands'"
         class="full-width row justify-center"
       >
         <q-input
@@ -37,7 +37,7 @@
           label="От"
           readonly
           square
-          :rules="[value=>value.length > 0 || 'Пожалуйста, выберите дату']"
+          :rules="[value=>value?.length > 0 || 'Пожалуйста, выберите дату']"
           v-model="start"
         >
           <template
@@ -76,7 +76,7 @@
           label="До"
           readonly
           square
-          :rules="[value=>value.length > 0 || 'Пожалуйста, выберите дату']"
+          :rules="[value=>value?.length > 0 || 'Пожалуйста, выберите дату']"
           v-model="end"
         >
           <template
@@ -128,19 +128,19 @@
             <q-tab
               name="basic"
               class="col-4"
-              icon="dashboard"
+              icon="bi-app"
               label="Простая"
             />
             <q-tab
               name="subcategory"
               class="col-4"
-              icon="article"
+              icon="bi-boxes"
               label="Подкатегории"
             />
             <q-tab
               name="brands"
               class="col-4"
-              icon="person"
+              icon="bi-handbag"
               label="Бренды"
             />
           </q-tabs>
@@ -414,18 +414,18 @@ export default {
       brandsTable: {
         columns: [
           {
-            name: 'period',
+            name: 'brandName',
             required: true,
-            label: 'Период',
+            label: 'Бренд',
             align: 'left',
-            field: 'period',
+            field: 'brandName',
             sortable: true
           },
           {
-            name: 'sales',
+            name: 'productCount',
             align: 'center',
-            label: 'Продажи',
-            field: 'sales',
+            label: 'Количество различных позиций',
+            field: 'productCount',
             sortable: true
           }
         ],
