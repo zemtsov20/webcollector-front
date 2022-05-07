@@ -9,18 +9,20 @@
         class="full-width row justify-center"
       >
         <q-input
+          ref="urlField"
           placeholder="Введите ссылку на категорию или товар"
           label="Ссылка на категорию или товар"
           outlined
           v-model="url"
+          hide-bottom-space
           class="col-6"
+          :rules="[value=>!!value.length || 'Пожалуйста, введите ссылку или выберите ее в меню слева']"
           v-on:keydown.enter="getUrl"
-          error-message="Введите данные"
         />
         <q-btn
           color="primary"
           label="Найти"
-          class="col-2 q-ml-md"
+          class="col-3 q-ml-md"
           @click="getUrl"
           :loading="loadingState"
         />
@@ -46,17 +48,19 @@
             >
               <q-popup-proxy
                 ref="qDateProxy"
+                anchor="bottom middle"
               >
                 <q-date
                   v-model="start"
                   mask="DD MM YYYY"
+                  :options="startDateRestriction"
                 >
                   <div
                     class="row items-center justify-end"
                   >
                     <q-btn
                       v-close-popup
-                      label="Close"
+                      label="Закрыть"
                       color="secondary"
                       flat
                     />
@@ -83,17 +87,19 @@
             >
               <q-popup-proxy
                 ref="qDateProxy"
+                anchor="bottom middle"
               >
                 <q-date
                   v-model="end"
                   mask="DD MM YYYY"
+                  :options="endDateRestriction"
                 >
                   <div
                     class="row items-center justify-end"
                   >
                     <q-btn
                       v-close-popup
-                      label="Close"
+                      label="Закрыть"
                       color="secondary"
                       flat
                     />
@@ -106,30 +112,33 @@
       </div>
       <div
         v-if="!loadingState&&resultsExists"
-        class="fit column"
+        class="column full-width"
       >
         <div
-          class="col-9 q-gutter-y-sm"
+          class="row full-width q-gutter-y-sm justify-center"
         >
           <q-tabs
             v-model="tab"
             narrow-indicator
-            class="text-primary"
+            class="text-primary col-9"
             dense
             align="justify"
           >
             <q-tab
               name="basic"
+              class="col-4"
               icon="dashboard"
               label="Простая"
             />
             <q-tab
               name="subcategory"
+              class="col-4"
               icon="article"
               label="Подкатегории"
             />
             <q-tab
               name="sellers"
+              class="col-4"
               icon="person"
               label="Продавцы"
             />
@@ -137,14 +146,26 @@
         </div>
         <div
           v-show="tab === 'basic'"
-          class="column q-gutter-y-sm"
+          class="column full-width q-gutter-y-sm"
         >
-          <q-banner
-            v-if="basicBannerFlag"
-            class="bg-primary text-white q-mt-md col-9"
+          <div
+            class="row justify-center"
           >
-            Информация по некоторым датам в промежутке недоступна! Вы картон!
-          </q-banner>
+            <q-banner
+              v-if="basicBannerFlag"
+              class="bg-primary text-white q-mt-md col-9"
+            >
+              <template
+                v-slot:avatar
+              >
+                <q-icon
+                  name="bi-exclamation-circle"
+                  color="white"
+                />
+              </template>
+              Информация по некоторым датам в промежутке недоступна! Вы картон!
+            </q-banner>
+          </div>
           <chart-and-table
             :chart="basicChart"
             :table="basicTable"
@@ -173,6 +194,7 @@
 
 <script>
 import ChartAndTable from 'components/ChartAndTable'
+import { date } from 'quasar'
 export default {
   components: {
     ChartAndTable
@@ -183,7 +205,23 @@ export default {
       loadingState: false,
       resultsExists: false,
       basicBannerFlag: false,
-      // basic chart info
+      /**
+       * @typedef {Object} basicChartDataConfiguration
+       * @property {string} name
+       * @property {number[]} data
+       */
+      /**
+       * @typedef {Object} basicChartTypeConfiguration
+       * @property {string} type
+       */
+      /**
+       * @typedef {Object} basicChartConfiguration
+       * @property {basicChartDataConfiguration[]} series
+       * @property {basicChartTypeConfiguration} chart
+       */
+      /**
+       * @type {basicChartConfiguration}
+       */
       basicChart: {
         series: [
           {
@@ -195,7 +233,29 @@ export default {
           type: 'line'
         }
       },
-      // basic table info
+      /**
+       * @typedef {Object} productInformation
+       * @property {string} period
+       * @property {string} averagePrice
+       * @property {string} goodsCount
+       */
+      /**
+       * @typedef {Object} columnConfiguration
+       * @property {string} name
+       * @property {boolean} [required]
+       * @property {string} label
+       * @property {string} [align]
+       * @property {string} field
+       * @property {boolean} [sortable]
+       */
+      /**
+       * @typedef {Object} basicTableConfiguration
+       * @property {columnConfiguration[]} columns
+       * @property {productInformation[]} data
+       */
+      /**
+       * @type {basicTableConfiguration}
+       */
       basicTable: {
         columns: [
           {
@@ -341,21 +401,47 @@ export default {
   },
   methods: {
     async getUrl () {
-      this.loadingState = true
-      const basicDataArray = []
-      const response = await fetch('http://127.0.0.1:8080/basic-statistics?ref=' + this.url + '&start=' + this.start + '&end=' + this.end)
-      let responseData = await response.json()
-      const initialResponseDataLength = responseData.length
-      responseData = responseData.filter(el => el.averagePrice !== 'null')
-      this.basicBannerFlag = initialResponseDataLength !== responseData.length
-      responseData.forEach(el => basicDataArray.push({ x: el.period, y: el.averagePrice }))
-      this.basicChart.series[0].data = basicDataArray
-      this.basicTable.data = responseData
-      this.resultsExists = true
-      this.loadingState = false
+      const correctURLFieldInput = this.$refs.urlField.validate()
+      const correctStartDateInput = this.$refs.startDateInput.validate()
+      const correctEndDateInput = this.$refs.endDateInput.validate()
+      if (correctURLFieldInput && correctEndDateInput && correctStartDateInput) {
+        this.loadingState = true
+        const basicDataArray = []
+        const response = await fetch(`http://127.0.0.1:8080/basic-statistics?ref=${this.url}&start=${this.start}&end=${this.end}`)
+        let responseData = await response.json()
+        const initialResponseDataLength = responseData.length
+        responseData = responseData.filter(el => el.averagePrice !== 'null')
+        this.basicBannerFlag = initialResponseDataLength !== responseData.length
+        responseData.forEach(el => basicDataArray.push({ x: el.period, y: el.averagePrice }))
+        this.basicChart.series[0].data = basicDataArray
+        this.basicTable.data = responseData
+        this.resultsExists = true
+        this.loadingState = false
+      }
     },
-    onclick (link) {
-      this.url = link
+    startDateRestriction (dateForCheck) {
+      if (this.end === '') {
+        return true
+      }
+      const startDate = new Date(0)
+      const maxDate = date.extractDate(this.end, 'DD MM YYYY')
+      return date.isBetweenDates(dateForCheck, startDate, maxDate, {
+        inclusiveFrom: true,
+        inclusiveTo: true,
+        onlyDate: true
+      })
+    },
+    endDateRestriction (dateForCheck) {
+      if (this.start === '') {
+        return true
+      }
+      const startDate = date.extractDate(this.start, 'DD MM YYYY')
+      const maxDate = new Date(8640000000000000)
+      return date.isBetweenDates(dateForCheck, startDate, maxDate, {
+        inclusiveFrom: true,
+        inclusiveTo: true,
+        onlyDate: true
+      })
     }
   },
   computed: {
