@@ -432,9 +432,16 @@ export default {
       const dateArray = []
       const figureData = []
       for (let i = 0; i < responseData.length; i++) {
-        responseData[i] = responseData[i].filter(el => !!el.averagePrice)
+        responseData[i].statistics = responseData[i].statistics.map(el => {
+          return {
+            period: el.period,
+            averagePrice: el.averagePrice === 'null' ? null : Number(el.averagePrice),
+            goodsCount: el.goodsCount === 'null' ? null : Number(el.goodsCount)
+          }
+        })
       }
-      responseData[0].forEach((el, i, a) => {
+      console.log(responseData)
+      responseData[0].statistics.forEach((el, i, a) => {
         dateArray[i] = this.dateConverter(el.period, 'DD MM YYYY HH:mm:ss ZZ')
       })
       for (let i = 0; i < responseData.length; i++) {
@@ -447,17 +454,17 @@ export default {
           name: responseData[i].categoryUrl,
           data: []
         })
-        for (let j = 0; j < responseData[i].length; j++) {
-          arrayForTable[i].averagePrice += responseData[j].averagePrice
-          arrayForTable[i].averageProductCount += responseData[j].goodsCount
-          figureData[i].data.push(responseData[j].averagePrice)
+        for (let j = 0; j < responseData[i].statistics.length; j++) {
+          arrayForTable[i].averagePrice += responseData[i].statistics[j].averagePrice !== null ? responseData[i].statistics[j].averagePrice : 0
+          arrayForTable[i].averageProductCount += responseData[i].statistics[j].goodsCount !== null ? responseData[i].statistics[j].goodsCount : 0
+          figureData[i].data.push(responseData[i].statistics[j].averagePrice)
         }
-        arrayForTable[i].averagePrice = (arrayForTable[i].averagePrice / responseData[i].length).toString()
-        arrayForTable[i].averageProductCount = (arrayForTable[i].averageProductCount / responseData[i].length).toString()
-        this.subcategoryTable.data = arrayForTable
-        this.subcategoryChart.series = figureData
-        this.subcategoryChart.chart.xaxis = dateArray
+        arrayForTable[i].averagePrice = Number(arrayForTable[i].averagePrice / responseData[i].statistics.filter(el => !!el.averagePrice).length).toFixed(0)
+        arrayForTable[i].averageProductCount = Number(arrayForTable[i].averageProductCount / responseData[i].statistics.filter(el => !!el.goodsCount).length).toFixed(0)
       }
+      this.subcategoryTable.data = arrayForTable
+      this.subcategoryChart.series = figureData
+      this.subcategoryChart.chart.xaxis = { categories: dateArray }
     },
     async initBasicData () {
       const basicDataArray = []
