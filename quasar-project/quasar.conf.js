@@ -23,7 +23,8 @@ module.exports = function (/* ctx */) {
     // https://v1.quasar.dev/quasar-cli/boot-files
     boot: [
       'apexcharts',
-      'magicfile'
+      'magicfile',
+      'Constants'
     ],
 
     // https://v1.quasar.dev/quasar-cli/quasar-conf-js#Property%3A-css

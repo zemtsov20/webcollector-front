@@ -28,6 +28,7 @@
         />
       </div>
       <div
+        v-if="tab !== 'brands'"
         class="full-width row justify-center"
       >
         <q-input
@@ -137,7 +138,7 @@
               label="Подкатегории"
             />
             <q-tab
-              name="sellers"
+              name="brands"
               class="col-4"
               icon="person"
               label="Бренды"
@@ -198,11 +199,11 @@
           />
         </div>
         <div
-          v-show="tab === 'sellers'"
+          v-show="tab === 'brands'"
         >
           <chart-and-table
-            :chart="sellersChart"
-            :table="sellersTable"
+            :chart="brandsChart"
+            :table="brandsTable"
           />
         </div>
       </div>
@@ -213,6 +214,8 @@
 <script>
 import ChartAndTable from 'components/ChartAndTable'
 import { date } from 'quasar'
+import { SERVER_URL } from 'boot/Constants'
+
 export default {
   components: {
     ChartAndTable
@@ -375,16 +378,40 @@ export default {
         ],
         data: null
       },
-      // sellers chart info
-      sellersChart: {
-        series: [1, 2, 13, 4],
+      /**
+       * @typedef {Object} donutChartConfiguration
+       * @property {string} type
+       * @property {string[]} labels
+       */
+      /**
+       * @typedef {Object} donutChart
+       * @property {number[]} series
+       * @property {donutChartConfiguration} chart
+       */
+      /**
+       * @type {donutChart}
+       */
+      brandsChart: {
+        series: null,
         chart: {
           type: 'donut',
-          labels: ['Apple', 'Mango', 'Orange', 'Watermelon']
+          labels: null
         }
       },
-      // sellers table info
-      sellersTable: {
+      /**
+       * @typedef {Object} donutInformation
+       * @property {string} brandName
+       * @property {number} productCount
+       */
+      /**
+       * @typedef {Object} donutTableConfiguration
+       * @property {columnConfiguration[]} columns
+       * @property {donutInformation[]} data
+       */
+      /**
+       * @type {donutTableConfiguration}
+       */
+      brandsTable: {
         columns: [
           {
             name: 'period',
@@ -400,15 +427,9 @@ export default {
             label: 'Продажи',
             field: 'sales',
             sortable: true
-          },
-          {
-            name: 'products',
-            label: 'Товары',
-            field: 'products',
-            sortable: true
           }
         ],
-        data: [1, 2, 3]
+        data: null
       },
       url: '',
       tab: 'basic',
@@ -425,8 +446,23 @@ export default {
       month = (month < 10 ? '0' : '') + month.toString()
       return day + '.' + month + '.' + dateBuffer.getFullYear().toString()
     },
+    async initBrandData () {
+      const response = await fetch(`${SERVER_URL}/donut-statistics?ref=${this.url}`)
+      const responseData = await response.json()
+      const donutData = {
+        data: [],
+        labels: []
+      }
+      for (let i = 0; i < responseData.length; i++) {
+        donutData.data.push(responseData[i].productCount)
+        donutData.labels.push(responseData[i].brandName)
+      }
+      this.brandsTable.data = responseData
+      this.brandsChart.chart.labels = donutData.labels
+      this.brandsChart.series = donutData.data
+    },
     async initSubcategoryData () {
-      const response = await fetch(`http://127.0.0.1:8080/subcategory-statistics?ref=${this.url}&start=${this.start}&end=${this.end}`)
+      const response = await fetch(`${SERVER_URL}/subcategory-statistics?ref=${this.url}&start=${this.start}&end=${this.end}`)
       const responseData = await response.json()
       const arrayForTable = []
       const dateArray = []
@@ -440,7 +476,6 @@ export default {
           }
         })
       }
-      console.log(responseData)
       responseData[0].statistics.forEach((el, i, a) => {
         dateArray[i] = this.dateConverter(el.period, 'DD MM YYYY HH:mm:ss ZZ')
       })
@@ -464,11 +499,11 @@ export default {
       }
       this.subcategoryTable.data = arrayForTable
       this.subcategoryChart.series = figureData
-      this.subcategoryChart.chart.xaxis = { categories: dateArray }
+      this.subcategoryChart.chart.xaxis.categories = dateArray
     },
     async initBasicData () {
       const basicDataArray = []
-      const response = await fetch(`http://127.0.0.1:8080/basic-statistics?ref=${this.url}&start=${this.start}&end=${this.end}`)
+      const response = await fetch(`${SERVER_URL}/basic-statistics?ref=${this.url}&start=${this.start}&end=${this.end}`)
       let responseData = await response.json()
       const initialResponseDataLength = responseData.length
       responseData = responseData.filter(el => el.averagePrice !== 'null')
@@ -484,10 +519,11 @@ export default {
       const correctURLFieldInput = this.$refs.urlField.validate()
       const correctStartDateInput = this.$refs.startDateInput.validate()
       const correctEndDateInput = this.$refs.endDateInput.validate()
-      if (correctURLFieldInput && correctEndDateInput && correctStartDateInput) {
+      if (correctURLFieldInput && (this.tab === 'brands' || (correctEndDateInput && correctStartDateInput))) {
         this.loadingState = true
         await this.initBasicData()
         await this.initSubcategoryData()
+        await this.initBrandData()
         this.resultsExists = true
         this.loadingState = false
       }
