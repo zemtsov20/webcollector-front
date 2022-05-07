@@ -26,7 +26,87 @@
         />
       </div>
       <div
+        class="full-width row justify-center"
+      >
+        <q-input
+          class="q-mr-lg"
+          ref="startDateInput"
+          label="От"
+          readonly
+          square
+          :rules="[value=>value.length > 0 || 'Пожалуйста, выберите дату']"
+          v-model="start"
+        >
+          <template
+            v-slot:append
+          >
+            <q-icon
+              name="event"
+              class="cursor-pointer"
+            >
+              <q-popup-proxy
+                ref="qDateProxy"
+              >
+                <q-date
+                  v-model="start"
+                  mask="DD MM YYYY"
+                >
+                  <div
+                    class="row items-center justify-end"
+                  >
+                    <q-btn
+                      v-close-popup
+                      label="Close"
+                      color="secondary"
+                      flat
+                    />
+                  </div>
+                </q-date>
+              </q-popup-proxy>
+            </q-icon>
+          </template>
+        </q-input>
+        <q-input
+          ref="endDateInput"
+          label="До"
+          readonly
+          square
+          :rules="[value=>value.length > 0 || 'Пожалуйста, выберите дату']"
+          v-model="end"
+        >
+          <template
+            v-slot:append
+          >
+            <q-icon
+              name="event"
+              class="cursor-pointer"
+            >
+              <q-popup-proxy
+                ref="qDateProxy"
+              >
+                <q-date
+                  v-model="end"
+                  mask="DD MM YYYY"
+                >
+                  <div
+                    class="row items-center justify-end"
+                  >
+                    <q-btn
+                      v-close-popup
+                      label="Close"
+                      color="secondary"
+                      flat
+                    />
+                  </div>
+                </q-date>
+              </q-popup-proxy>
+            </q-icon>
+          </template>
+        </q-input>
+      </div>
+      <div
         v-if="!loadingState&&resultsExists"
+        class="fit column"
       >
         <div
           class="col-9 q-gutter-y-sm"
@@ -61,7 +141,7 @@
         >
           <q-banner
             v-if="basicBannerFlag"
-            class="bg-primary text-white"
+            class="bg-primary text-white q-mt-md col-9"
           >
             Информация по некоторым датам в промежутке недоступна! Вы картон!
           </q-banner>
@@ -251,23 +331,25 @@ export default {
             sortable: true
           }
         ],
-        data: null
+        data: [1, 2, 3]
       },
       url: '',
-      tab: 'basic'
+      tab: 'basic',
+      start: '',
+      end: ''
     }
   },
   methods: {
     async getUrl () {
       this.loadingState = true
       const basicDataArray = []
-      const response = await fetch('http://127.0.0.1:8080/basic?name=testName&period=20-05-22')
+      const response = await fetch('http://127.0.0.1:8080/basic-statistics?ref=' + this.url + '&start=' + this.start + '&end=' + this.end)
       let responseData = await response.json()
       const initialResponseDataLength = responseData.length
-      responseData = responseData.filter(el => el.averagePrice !== null)
-      this.basicBannerFlag = initialResponseDataLength === responseData.length
-      responseData.forEach(el => basicDataArray.push(el.averagePrice))
-      this.basicChart.series.data = basicDataArray
+      responseData = responseData.filter(el => el.averagePrice !== 'null')
+      this.basicBannerFlag = initialResponseDataLength !== responseData.length
+      responseData.forEach(el => basicDataArray.push({ x: el.period, y: el.averagePrice }))
+      this.basicChart.series[0].data = basicDataArray
       this.basicTable.data = responseData
       this.resultsExists = true
       this.loadingState = false
