@@ -225,7 +225,7 @@ export default {
       basicChart: {
         series: [
           {
-            name: 'Цена',
+            name: 'Ср. цена',
             data: null
           }
         ],
@@ -408,24 +408,24 @@ export default {
       responseData = responseData.filter(el => el.averagePrice !== 'null')
       this.basicBannerFlag = initialResponseDataLength !== responseData.length
       responseData.forEach(el => {
-        el = date.extractDate(el, 'DD MM YYYY HH:mm:ss ZZ')
-        let day = el.getDate()
-        let month = el.getMonth() + 1
+        el.period = date.extractDate(el.period, 'DD MM YYYY HH:mm:ss ZZ')
+        let day = el.period.getDate()
+        let month = el.period.getMonth() + 1
         day = (day < 10 ? '0' : '') + day.toString()
         month = (month < 10 ? '0' : '') + month.toString()
-        el = day + '.' + month + '.' + el.getFullYear().toString()
+        el.period = day + '.' + month + '.' + el.period.getFullYear().toString()
         basicDataArray.push({ x: el.period, y: el.averagePrice })
       })
       this.basicChart.series[0].data = basicDataArray
       this.basicTable.data = responseData
     },
-    getUrl () {
+    async getUrl () {
       const correctURLFieldInput = this.$refs.urlField.validate()
       const correctStartDateInput = this.$refs.startDateInput.validate()
       const correctEndDateInput = this.$refs.endDateInput.validate()
       if (correctURLFieldInput && correctEndDateInput && correctStartDateInput) {
         this.loadingState = true
-        this.initBasicData()
+        await this.initBasicData()
         this.resultsExists = true
         this.loadingState = false
       }
